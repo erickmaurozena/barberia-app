@@ -9,9 +9,16 @@ function PanelBarbero() {
   const [cargandoAuth, setCargandoAuth] = useState(true);
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
+  const [horarios, setHorarios] = useState([]);
 
   const [nombreServicio, setNombreServicio] = useState("");
   const [precioServicio, setPrecioServicio] = useState("");
+
+  const [diaHorario, setDiaHorario] = useState("");
+  const [horaInicioHorario, setHoraInicioHorario] = useState("");
+  const [horaFinHorario, setHoraFinHorario] = useState("");
+  const [activoHorario, setActivoHorario] = useState(true);
+
   const [mensaje, setMensaje] = useState("");
 
   useEffect(() => {
@@ -26,6 +33,7 @@ function PanelBarbero() {
     if (!usuario) return;
     cargarCitas();
     cargarServicios();
+    cargarHorarios();
   }, [usuario]);
 
   async function cargarCitas() {
@@ -38,19 +46,21 @@ function PanelBarbero() {
     setServicios(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   }
 
+  async function cargarHorarios() {
+    const snapshot = await getDocs(collection(db, "horarios"));
+    setHorarios(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  }
+
   async function agregarServicio(e) {
     e.preventDefault();
-
     if (!nombreServicio || !precioServicio) {
       setMensaje("Completa nombre y precio.");
       return;
     }
-
     await addDoc(collection(db, "servicios"), {
       nombre: nombreServicio,
       precio: Number(precioServicio),
     });
-
     setMensaje("Servicio agregado.");
     setNombreServicio("");
     setPrecioServicio("");
@@ -60,6 +70,31 @@ function PanelBarbero() {
   async function eliminarServicio(id) {
     await deleteDoc(doc(db, "servicios", id));
     cargarServicios();
+  }
+
+  async function agregarHorario(e) {
+    e.preventDefault();
+    if (!diaHorario || !horaInicioHorario || !horaFinHorario) {
+      setMensaje("Completa día, hora inicio y hora fin.");
+      return;
+    }
+    await addDoc(collection(db, "horarios"), {
+      dia: diaHorario,
+      horaInicio: horaInicioHorario,
+      horaFin: horaFinHorario,
+      activo: activoHorario,
+    });
+    setMensaje("Horario agregado.");
+    setDiaHorario("");
+    setHoraInicioHorario("");
+    setHoraFinHorario("");
+    setActivoHorario(true);
+    cargarHorarios();
+  }
+
+  async function eliminarHorario(id) {
+    await deleteDoc(doc(db, "horarios", id));
+    cargarHorarios();
   }
 
   if (cargandoAuth) {
@@ -140,7 +175,6 @@ function PanelBarbero() {
             style={{ width: "100%", padding: "6px" }}
           />
         </div>
-
         <div style={{ marginBottom: "10px" }}>
           <label>Precio (S/):</label>
           <br />
@@ -151,9 +185,97 @@ function PanelBarbero() {
             style={{ width: "100%", padding: "6px" }}
           />
         </div>
-
         <button type="submit" style={{ padding: "8px 16px" }}>
           Agregar servicio
+        </button>
+      </form>
+
+      <hr style={{ margin: "30px 0" }} />
+
+      <h2>Horarios de atención</h2>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {horarios.map((horario) => (
+          <li
+            key={horario.id}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              padding: "8px 10px",
+              marginBottom: "8px",
+            }}
+          >
+            <span>
+              {horario.dia}:{" "}
+              {horario.activo
+                ? `${horario.horaInicio} a ${horario.horaFin}`
+                : "Cerrado"}
+            </span>
+            <button onClick={() => eliminarHorario(horario.id)}>
+              Eliminar
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <h3>Agregar / editar horario</h3>
+      <form onSubmit={agregarHorario}>
+        <div style={{ marginBottom: "10px" }}>
+          <label>Día:</label>
+          <br />
+          <select
+            value={diaHorario}
+            onChange={(e) => setDiaHorario(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          >
+            <option value="">-- Selecciona --</option>
+            <option value="Lunes">Lunes</option>
+            <option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option>
+            <option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option>
+            <option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+          </select>
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>Hora inicio:</label>
+          <br />
+          <input
+            type="time"
+            value={horaInicioHorario}
+            onChange={(e) => setHoraInicioHorario(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>Hora fin:</label>
+          <br />
+          <input
+            type="time"
+            value={horaFinHorario}
+            onChange={(e) => setHoraFinHorario(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={activoHorario}
+              onChange={(e) => setActivoHorario(e.target.checked)}
+            />{" "}
+            Día activo (atiende ese día)
+          </label>
+        </div>
+
+        <button type="submit" style={{ padding: "8px 16px" }}>
+          Agregar horario
         </button>
       </form>
 
