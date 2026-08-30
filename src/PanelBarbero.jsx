@@ -3,6 +3,8 @@ import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore"
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { db, auth } from "./firebase";
 import Login from "./Login";
+const CLOUDINARY_CLOUD_NAME = "sirdjhtw";
+const CLOUDINARY_UPLOAD_PRESET = "barberia_fotos";
 
 function PanelBarbero() {
   const [usuario, setUsuario] = useState(null);
@@ -10,6 +12,8 @@ function PanelBarbero() {
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [horarios, setHorarios] = useState([]);
+  const [fotos, setFotos] = useState([]);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   const [nombreServicio, setNombreServicio] = useState("");
   const [precioServicio, setPrecioServicio] = useState("");
@@ -34,7 +38,8 @@ function PanelBarbero() {
     cargarCitas();
     cargarServicios();
     cargarHorarios();
-  }, [usuario]);
+    cargarFotos();
+}, [usuario]);
 
   async function cargarCitas() {
     const snapshot = await getDocs(collection(db, "citas"));
@@ -50,6 +55,40 @@ function PanelBarbero() {
     const snapshot = await getDocs(collection(db, "horarios"));
     setHorarios(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   }
+
+  async function cargarFotos() {
+    const snapshot = await getDocs(collection(db, "fotos"));
+    setFotos(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+}
+
+async function subirFoto(e) {
+    const archivo = e.target.files[0];
+    if (!archivo) return;
+
+    setSubiendoFoto(true);
+
+    const formData = new FormData();
+    formData.append("file", archivo);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+      const respuesta = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: "POST", body: formData }
+      );
+      const datos = await respuesta.json();
+
+      await addDoc(collection(db, "fotos"), {
+        url: datos.secure_url,
+      });
+
+      cargarFotos();
+    } catch {
+      setMensaje("Error al subir la foto.");
+    }
+
+    setSubiendoFoto(false);
+}
 
   async function agregarServicio(e) {
     e.preventDefault();
@@ -278,6 +317,48 @@ function PanelBarbero() {
           Agregar horario
         </button>
       </form>
+
+           <hr style={{ margin: "30px 0" }} />
+
+      <h2>Galería de fotos / herramientas</h2>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "8px",
+          marginBottom: "15px",
+        }}
+      >
+        {fotos.map((foto) => (
+          <img
+            key={foto.id}
+            src={foto.url}
+            alt="Foto de la barbería"
+            style={{ width: "100%", height: "90px", objectFit: "cover", borderRadius: "6px" }}
+          />
+        ))}
+      </div>
+
+      <label
+        style={{
+          display: "inline-block",
+          padding: "8px 16px",
+          background: "#333",
+          color: "white",
+          borderRadius: "6px",
+          cursor: "pointer",
+        }}
+      >
+        {subiendoFoto ? "Subiendo..." : "Subir foto"}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={subirFoto}
+          style={{ display: "none" }}
+          disabled={subiendoFoto}
+        />
+      </label>
 
       {mensaje && <p style={{ color: "green" }}>{mensaje}</p>}
     </div>
