@@ -1,32 +1,58 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
 function App() {
   const [servicios, setServicios] = useState([]);
   const [horarios, setHorarios] = useState([]);
 
+  // Campos del formulario
+  const [nombreCliente, setNombreCliente] = useState("");
+  const [servicioElegido, setServicioElegido] = useState("");
+  const [diaElegido, setDiaElegido] = useState("");
+  const [horaElegida, setHoraElegida] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
   useEffect(() => {
     async function cargarDatos() {
       const serviciosSnapshot = await getDocs(collection(db, "servicios"));
-      const listaServicios = serviciosSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setServicios(listaServicios);
+      setServicios(
+        serviciosSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
 
       const horariosSnapshot = await getDocs(collection(db, "horarios"));
-      const listaHorarios = horariosSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setHorarios(listaHorarios);
+      setHorarios(
+        horariosSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
     }
     cargarDatos();
   }, []);
 
+  async function reservarCita(e) {
+    e.preventDefault();
+
+    if (!nombreCliente || !servicioElegido || !diaElegido || !horaElegida) {
+      setMensaje("Por favor completa todos los campos.");
+      return;
+    }
+
+    await addDoc(collection(db, "citas"), {
+      nombreCliente,
+      servicio: servicioElegido,
+      dia: diaElegido,
+      hora: horaElegida,
+      estado: "pendiente",
+    });
+
+    setMensaje("¡Cita reservada con éxito! Te esperamos.");
+    setNombreCliente("");
+    setServicioElegido("");
+    setDiaElegido("");
+    setHoraElegida("");
+  }
+
   return (
-    <div style={{ fontFamily: "Arial", padding: "20px" }}>
+    <div style={{ fontFamily: "Arial", padding: "20px", maxWidth: "400px" }}>
       <h1>Barbería El Corte</h1>
 
       <h2>Nuestros servicios</h2>
@@ -49,6 +75,73 @@ function App() {
           </li>
         ))}
       </ul>
+
+      <h2>Reservar una cita</h2>
+      <form onSubmit={reservarCita}>
+        <div style={{ marginBottom: "10px" }}>
+          <label>Nombre completo:</label>
+          <br />
+          <input
+            type="text"
+            value={nombreCliente}
+            onChange={(e) => setNombreCliente(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>Tipo de corte:</label>
+          <br />
+          <select
+            value={servicioElegido}
+            onChange={(e) => setServicioElegido(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          >
+            <option value="">-- Selecciona --</option>
+            {servicios.map((servicio) => (
+              <option key={servicio.id} value={servicio.nombre}>
+                {servicio.nombre} — S/ {servicio.precio}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>Día:</label>
+          <br />
+          <select
+            value={diaElegido}
+            onChange={(e) => setDiaElegido(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          >
+            <option value="">-- Selecciona --</option>
+            {horarios
+              .filter((h) => h.activo)
+              .map((horario) => (
+                <option key={horario.id} value={horario.dia}>
+                  {horario.dia}
+                </option>
+              ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>Hora:</label>
+          <br />
+          <input
+            type="time"
+            value={horaElegida}
+            onChange={(e) => setHoraElegida(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          />
+        </div>
+
+        <button type="submit" style={{ padding: "8px 16px" }}>
+          Reservar cita
+        </button>
+      </form>
+
+      {mensaje && <p style={{ color: "green" }}>{mensaje}</p>}
     </div>
   );
 }
