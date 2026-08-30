@@ -7,6 +7,7 @@ import PanelBarbero from "./PanelBarbero";
 function PaginaCliente() {
   const [servicios, setServicios] = useState([]);
   const [horarios, setHorarios] = useState([]);
+  const [fotos, setFotos] = useState([]);
 
   const [nombreCliente, setNombreCliente] = useState("");
   const [servicioElegido, setServicioElegido] = useState("");
@@ -21,9 +22,14 @@ function PaginaCliente() {
         serviciosSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
       );
 
-      const horariosSnapshot = await getDocs(collection(db, "horarios"));
+            const horariosSnapshot = await getDocs(collection(db, "horarios"));
       setHorarios(
         horariosSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+
+      const fotosSnapshot = await getDocs(collection(db, "fotos"));
+      setFotos(
+        fotosSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
       );
     }
     cargarDatos();
@@ -76,6 +82,30 @@ function PaginaCliente() {
           </li>
         ))}
       </ul>
+
+            <h2>Nuestros trabajos</h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "8px",
+          marginBottom: "20px",
+        }}
+      >
+        {fotos.map((foto) => (
+          <img
+            key={foto.id}
+            src={foto.url}
+            alt="Trabajo de la barbería"
+            style={{
+              width: "100%",
+              height: "90px",
+              objectFit: "cover",
+              borderRadius: "6px",
+            }}
+          />
+        ))}
+      </div>
 
       <h2>Reservar una cita</h2>
       <form onSubmit={reservarCita}>
