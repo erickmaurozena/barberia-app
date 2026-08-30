@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
+import { Routes, Route, Link } from "react-router-dom";
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import PanelBarbero from "./PanelBarbero";
 
-function App() {
+function PaginaCliente() {
   const [servicios, setServicios] = useState([]);
   const [horarios, setHorarios] = useState([]);
 
-  // Campos del formulario
   const [nombreCliente, setNombreCliente] = useState("");
   const [servicioElegido, setServicioElegido] = useState("");
   const [diaElegido, setDiaElegido] = useState("");
@@ -142,7 +143,19 @@ function App() {
       </form>
 
       {mensaje && <p style={{ color: "green" }}>{mensaje}</p>}
+
+      <hr style={{ marginTop: "30px" }} />
+      <Link to="/panel">Soy el barbero, ir al panel</Link>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<PaginaCliente />} />
+      <Route path="/panel" element={<PanelBarbero />} />
+    </Routes>
   );
 }
 
