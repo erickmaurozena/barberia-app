@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { db, auth } from "./firebase";
 import Login from "./Login";
@@ -8,7 +8,11 @@ function PanelBarbero() {
   const [usuario, setUsuario] = useState(null);
   const [cargandoAuth, setCargandoAuth] = useState(true);
   const [citas, setCitas] = useState([]);
-  
+  const [servicios, setServicios] = useState([]);
+
+  const [nombreServicio, setNombreServicio] = useState("");
+  const [precioServicio, setPrecioServicio] = useState("");
+  const [mensaje, setMensaje] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -20,17 +24,43 @@ function PanelBarbero() {
 
   useEffect(() => {
     if (!usuario) return;
-
-    async function cargarCitas() {
-      const snapshot = await getDocs(collection(db, "citas"));
-      const lista = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setCitas(lista);
-    }
     cargarCitas();
+    cargarServicios();
   }, [usuario]);
+
+  async function cargarCitas() {
+    const snapshot = await getDocs(collection(db, "citas"));
+    setCitas(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  }
+
+  async function cargarServicios() {
+    const snapshot = await getDocs(collection(db, "servicios"));
+    setServicios(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  }
+
+  async function agregarServicio(e) {
+    e.preventDefault();
+
+    if (!nombreServicio || !precioServicio) {
+      setMensaje("Completa nombre y precio.");
+      return;
+    }
+
+    await addDoc(collection(db, "servicios"), {
+      nombre: nombreServicio,
+      precio: Number(precioServicio),
+    });
+
+    setMensaje("Servicio agregado.");
+    setNombreServicio("");
+    setPrecioServicio("");
+    cargarServicios();
+  }
+
+  async function eliminarServicio(id) {
+    await deleteDoc(doc(db, "servicios", id));
+    cargarServicios();
+  }
 
   if (cargandoAuth) {
     return <p style={{ padding: "20px" }}>Cargando...</p>;
@@ -48,9 +78,7 @@ function PanelBarbero() {
       </button>
 
       <h2>Citas reservadas</h2>
-
       {citas.length === 0 && <p>Todavía no hay citas reservadas.</p>}
-
       <ul style={{ listStyle: "none", padding: 0 }}>
         {citas.map((cita) => (
           <li
@@ -72,6 +100,64 @@ function PanelBarbero() {
           </li>
         ))}
       </ul>
+
+      <hr style={{ margin: "30px 0" }} />
+
+      <h2>Servicios y precios</h2>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {servicios.map((servicio) => (
+          <li
+            key={servicio.id}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              padding: "8px 10px",
+              marginBottom: "8px",
+            }}
+          >
+            <span>
+              {servicio.nombre} — S/ {servicio.precio}
+            </span>
+            <button onClick={() => eliminarServicio(servicio.id)}>
+              Eliminar
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <h3>Agregar nuevo servicio</h3>
+      <form onSubmit={agregarServicio}>
+        <div style={{ marginBottom: "10px" }}>
+          <label>Nombre del corte:</label>
+          <br />
+          <input
+            type="text"
+            value={nombreServicio}
+            onChange={(e) => setNombreServicio(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>Precio (S/):</label>
+          <br />
+          <input
+            type="number"
+            value={precioServicio}
+            onChange={(e) => setPrecioServicio(e.target.value)}
+            style={{ width: "100%", padding: "6px" }}
+          />
+        </div>
+
+        <button type="submit" style={{ padding: "8px 16px" }}>
+          Agregar servicio
+        </button>
+      </form>
+
+      {mensaje && <p style={{ color: "green" }}>{mensaje}</p>}
     </div>
   );
 }
