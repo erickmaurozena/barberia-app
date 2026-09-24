@@ -3,6 +3,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import PanelBarbero from "./PanelBarbero";
+import ConfirmarCita from "./ConfirmarCita";
 
 function PaginaCliente() {
   const [servicios, setServicios] = useState([]);
@@ -172,9 +173,12 @@ function PaginaCliente() {
         </button>
       </form>
 
-      {mensaje && <p style={{ color: "green" }}>{mensaje}</p>}
+            {mensaje && <p style={{ color: "green" }}>{mensaje}</p>}
 
       <hr style={{ marginTop: "30px" }} />
+      <p>
+        <Link to="/confirmar">¿Ya reservaste? Confirma tu asistencia aquí</Link>
+      </p>
       <Link to="/panel">Soy el barbero, ir al panel</Link>
     </div>
   );
@@ -185,6 +189,7 @@ function App() {
     <Routes>
       <Route path="/" element={<PaginaCliente />} />
       <Route path="/panel" element={<PanelBarbero />} />
+      <Route path="/confirmar" element={<ConfirmarCita />} />
     </Routes>
   );
 }
