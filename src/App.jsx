@@ -14,6 +14,8 @@ function PaginaCliente() {
   const [servicioElegido, setServicioElegido] = useState("");
   const [diaElegido, setDiaElegido] = useState("");
   const [horaElegida, setHoraElegida] = useState("");
+  const [horariosDisponibles, setHorariosDisponibles] = useState([]);
+  const [horariosOcupados, setHorariosOcupados] = useState([]);
   const [mensaje, setMensaje] = useState("");
 
   useEffect(() => {
@@ -35,6 +37,48 @@ function PaginaCliente() {
     }
     cargarDatos();
   }, []);
+    function generarSlots(horaInicio, horaFin, intervaloMinutos = 30) {
+    const slots = [];
+    let [h, m] = horaInicio.split(":").map(Number);
+    const [hFin, mFin] = horaFin.split(":").map(Number);
+
+    while (h < hFin || (h === hFin && m < mFin)) {
+      const hora = String(h).padStart(2, "0");
+      const min = String(m).padStart(2, "0");
+      slots.push(`${hora}:${min}`);
+
+      m += intervaloMinutos;
+      if (m >= 60) {
+        m -= 60;
+        h += 1;
+      }
+    }
+    return slots;
+  }
+
+  async function actualizarHorariosDisponibles(dia) {
+    setHoraElegida("");
+
+    const horarioDelDia = horarios.find((h) => h.dia === dia);
+
+    if (!horarioDelDia || !horarioDelDia.activo) {
+      setHorariosDisponibles([]);
+      setHorariosOcupados([]);
+      return;
+    }
+
+    const todosLosSlots = generarSlots(
+      horarioDelDia.horaInicio,
+      horarioDelDia.horaFin
+    );
+
+    const q = query(collection(db, "citas"), where("dia", "==", dia));
+    const snapshot = await getDocs(q);
+    const ocupados = snapshot.docs.map((doc) => doc.data().hora);
+
+    setHorariosDisponibles(todosLosSlots);
+    setHorariosOcupados(ocupados);
+  }
 
   async function reservarCita(e) {
     e.preventDefault();
@@ -159,8 +203,11 @@ function PaginaCliente() {
           <br />
           <select
             value={diaElegido}
-            onChange={(e) => setDiaElegido(e.target.value)}
-            style={{ width: "100%", padding: "6px" }}
+            onChange={(e) => {
+              setDiaElegido(e.target.value);
+              actualizarHorariosDisponibles(e.target.value);
+            }}
+            
           >
             <option value="">-- Selecciona --</option>
             {horarios
@@ -175,13 +222,59 @@ function PaginaCliente() {
 
         <div style={{ marginBottom: "10px" }}>
           <label>Hora:</label>
-          <br />
-          <input
-            type="time"
-            value={horaElegida}
-            onChange={(e) => setHoraElegida(e.target.value)}
-            style={{ width: "100%", padding: "6px" }}
-          />
+          {diaElegido === "" && (
+            <p style={{ color: "#9ca3a0", fontSize: "14px" }}>
+              Primero elige un día.
+            </p>
+          )}
+          {diaElegido !== "" && horariosDisponibles.length === 0 && (
+            <p style={{ color: "#f87171", fontSize: "14px" }}>
+              No hay horarios disponibles ese día.
+            </p>
+          )}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "6px",
+              marginTop: "6px",
+            }}
+          >
+            {horariosDisponibles.map((slot) => {
+              const ocupado = horariosOcupados.includes(slot);
+              const seleccionado = horaElegida === slot;
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  disabled={ocupado}
+                  onClick={() => setHoraElegida(slot)}
+                  style={{
+                    padding: "8px 4px",
+                    borderRadius: "6px",
+                    border: seleccionado
+                      ? "2px solid #4ade80"
+                      : "1px solid #22c55e",
+                    backgroundColor: ocupado
+                      ? "#2a2a2a"
+                      : seleccionado
+                      ? "#22c55e"
+                      : "#151a15",
+                    color: ocupado
+                      ? "#6b7280"
+                      : seleccionado
+                      ? "#0b0f0b"
+                      : "#f2f2f2",
+                    textDecoration: ocupado ? "line-through" : "none",
+                    cursor: ocupado ? "not-allowed" : "pointer",
+                    fontWeight: seleccionado ? "bold" : "normal",
+                  }}
+                >
+                  {slot}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <button type="submit" style={{ padding: "8px 16px" }}>

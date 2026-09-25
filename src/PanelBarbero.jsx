@@ -65,6 +65,9 @@ function PanelBarbero() {
   const [horarios, setHorarios] = useState([]);
   const [fotos, setFotos] = useState([]);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [bloqueos, setBloqueos] = useState([]);
+  const [diaBloqueo, setDiaBloqueo] = useState("");
+
 
   const [nombreServicio, setNombreServicio] = useState("");
   const [precioServicio, setPrecioServicio] = useState("");
@@ -90,6 +93,7 @@ function PanelBarbero() {
     cargarServicios();
     cargarHorarios();
     cargarFotos();
+    cargarBloqueos();
   }, [usuario]);
 
   async function cargarCitas() {
@@ -110,6 +114,44 @@ function PanelBarbero() {
   async function cargarFotos() {
     const snapshot = await getDocs(collection(db, "fotos"));
     setFotos(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  }
+  async function cargarBloqueos() {
+    const snapshot = await getDocs(collection(db, "bloqueos"));
+    setBloqueos(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  }
+
+  function generarSlotsDelDia(dia) {
+    const horarioDelDia = horarios.find((h) => h.dia === dia);
+    if (!horarioDelDia || !horarioDelDia.activo) return [];
+
+    const slots = [];
+    let [h, m] = horarioDelDia.horaInicio.split(":").map(Number);
+    const [hFin, mFin] = horarioDelDia.horaFin.split(":").map(Number);
+
+    while (h < hFin || (h === hFin && m < mFin)) {
+      const hora = String(h).padStart(2, "0");
+      const min = String(m).padStart(2, "0");
+      slots.push(`${hora}:${min}`);
+      m += 30;
+      if (m >= 60) {
+        m -= 60;
+        h += 1;
+      }
+    }
+    return slots;
+  }
+
+  async function bloquearSlot(dia, hora) {
+    await addDoc(collection(db, "bloqueos"), { dia, hora });
+    cargarBloqueos();
+  }
+
+  async function quitarBloqueoPorSlot(dia, hora) {
+    const bloqueo = bloqueos.find((b) => b.dia === dia && b.hora === hora);
+    if (bloqueo) {
+      await deleteDoc(doc(db, "bloqueos", bloqueo.id));
+      cargarBloqueos();
+    }
   }
 
   async function subirFoto(e) {
@@ -335,7 +377,76 @@ function PanelBarbero() {
         </button>
       </form>
 
-      <hr style={{ margin: "30px 0", borderColor: "#22c55e" }} />
+           <hr style={{ margin: "30px 0", borderColor: "#22c55e" }} />
+
+      <h2 style={estilos.h2}>Bloquear horarios</h2>
+      <p style={{ color: "#9ca3a0", fontSize: "14px" }}>
+        Usa esto para cerrar un horario puntual (almuerzo, imprevisto, etc.) sin necesidad de que un cliente lo haya reservado.
+      </p>
+
+      
+           <div style={{ marginBottom: "10px" }}>
+        <label>Elige el día:</label>
+        <select
+          value={diaBloqueo}
+          onChange={(e) => setDiaBloqueo(e.target.value)}
+          style={estilos.input}
+        >
+          <option value="">-- Selecciona --</option>
+          <option value="Lunes">Lunes</option>
+          <option value="Martes">Martes</option>
+          <option value="Miércoles">Miércoles</option>
+          <option value="Jueves">Jueves</option>
+          <option value="Viernes">Viernes</option>
+          <option value="Sábado">Sábado</option>
+          <option value="Domingo">Domingo</option>
+        </select>
+      </div>
+
+      {diaBloqueo !== "" && (
+        <div>
+          <label>Toca los horarios que quieres bloquear:</label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "6px",
+              marginTop: "6px",
+              marginBottom: "15px",
+            }}
+          >
+            {generarSlotsDelDia(diaBloqueo).map((slot) => {
+              const yaBloqueado = bloqueos.some(
+                (b) => b.dia === diaBloqueo && b.hora === slot
+              );
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() =>
+                    yaBloqueado
+                      ? quitarBloqueoPorSlot(diaBloqueo, slot)
+                      : bloquearSlot(diaBloqueo, slot)
+                  }
+                  style={{
+                    padding: "8px 4px",
+                    borderRadius: "6px",
+                    border: yaBloqueado
+                      ? "2px solid #f87171"
+                      : "1px solid #22c55e",
+                    backgroundColor: yaBloqueado ? "#3a1c1c" : "#151a15",
+                    color: yaBloqueado ? "#f87171" : "#f2f2f2",
+                    textDecoration: yaBloqueado ? "line-through" : "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {slot}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <h2 style={estilos.h2}>Galería de fotos / herramientas</h2>
 
