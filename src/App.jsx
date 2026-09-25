@@ -3,7 +3,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import PanelBarbero from "./PanelBarbero";
-import ConfirmarCita from "./ConfirmarCita";
+import ConfirmarCita from "./ConfirmarCita.jsx";
 
 function PaginaCliente() {
   const [servicios, setServicios] = useState([]);
@@ -61,8 +61,7 @@ function PaginaCliente() {
 
   return (
     <div style={{ fontFamily: "Arial", padding: "20px", maxWidth: "400px" }}>
-      <h1>Barbería El Corte</h1>
-
+      <h1>Santos Faded</h1>
       <h2>Nuestros servicios</h2>
       <ul>
         {servicios.map((servicio) => (

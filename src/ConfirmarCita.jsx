@@ -42,9 +42,18 @@ function ConfirmarCita() {
   }
 
   return (
-    <div style={{ fontFamily: "Arial", padding: "20px", maxWidth: "400px" }}>
-      <h1>Confirmar mi cita</h1>
-      <p>Escribe tu nombre igual como lo pusiste al reservar.</p>
+    <div
+      style={{
+        fontFamily: "Arial",
+        padding: "20px",
+        maxWidth: "400px",
+        margin: "0 auto",
+      }}
+    >
+      <h1 style={{ color: "#4ade80" }}>Confirmar mi cita</h1>
+      <p style={{ color: "#9ca3a0" }}>
+        Escribe tu nombre igual como lo pusiste al reservar.
+      </p>
 
       <form onSubmit={buscarCitas}>
         <input
@@ -52,25 +61,36 @@ function ConfirmarCita() {
           value={nombreBuscar}
           onChange={(e) => setNombreBuscar(e.target.value)}
           placeholder="Tu nombre completo"
-          style={{ width: "100%", padding: "6px", marginBottom: "10px" }}
+          style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
         />
-        <button type="submit" style={{ padding: "8px 16px" }}>
+        <button
+          type="submit"
+          style={{
+            padding: "10px 18px",
+            backgroundColor: "#22c55e",
+            color: "#0b0f0b",
+            border: "none",
+            borderRadius: "6px",
+            fontWeight: "bold",
+          }}
+        >
           Buscar mi cita
         </button>
       </form>
 
       {buscando && <p>Buscando...</p>}
-      {mensaje && <p style={{ color: "red" }}>{mensaje}</p>}
+      {mensaje && <p style={{ color: "#f87171" }}>{mensaje}</p>}
 
-      <ul style={{ listStyle: "none", padding: 0, marginTop: "20px" }}>
+      <div style={{ marginTop: "20px" }}>
         {citasEncontradas.map((cita) => (
-          <li
+          <div
             key={cita.id}
             style={{
-              border: "1px solid #ccc",
+              border: "1px solid #22c55e",
               borderRadius: "8px",
               padding: "10px",
               marginBottom: "10px",
+              backgroundColor: "#151a15",
             }}
           >
             Servicio: {cita.servicio}
@@ -82,16 +102,24 @@ function ConfirmarCita() {
             {cita.estado !== "confirmada" && (
               <button
                 onClick={() => confirmarAsistencia(cita.id)}
-                style={{ marginTop: "8px", padding: "6px 12px" }}
+                style={{
+                  marginTop: "8px",
+                  padding: "8px 14px",
+                  backgroundColor: "#22c55e",
+                  color: "#0b0f0b",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontWeight: "bold",
+                }}
               >
                 Confirmar asistencia
               </button>
             )}
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
-      <hr style={{ marginTop: "20px" }} />
+      <hr style={{ marginTop: "20px", borderColor: "#22c55e" }} />
       <Link to="/">Volver al inicio</Link>
     </div>
   );

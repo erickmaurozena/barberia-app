@@ -3,8 +3,59 @@ import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore"
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { db, auth } from "./firebase";
 import Login from "./Login";
+
 const CLOUDINARY_CLOUD_NAME = "sirdjhtw";
 const CLOUDINARY_UPLOAD_PRESET = "barberia_fotos";
+
+const estilos = {
+  pagina: {
+    fontFamily: "Arial",
+    padding: "20px",
+    maxWidth: "500px",
+    margin: "0 auto",
+  },
+  h1: { color: "#4ade80" },
+  h2: { color: "#86efac", marginTop: "25px" },
+  h3: { color: "#86efac", marginTop: "15px" },
+  card: {
+    border: "1px solid #22c55e",
+    borderRadius: "8px",
+    padding: "10px",
+    marginBottom: "8px",
+    backgroundColor: "#151a15",
+  },
+  cardFila: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    border: "1px solid #22c55e",
+    borderRadius: "8px",
+    padding: "8px 10px",
+    marginBottom: "8px",
+    backgroundColor: "#151a15",
+  },
+  input: {
+    width: "100%",
+    padding: "8px",
+    marginTop: "4px",
+  },
+  boton: {
+    padding: "10px 18px",
+    backgroundColor: "#22c55e",
+    color: "#0b0f0b",
+    border: "none",
+    borderRadius: "6px",
+    fontWeight: "bold",
+    marginTop: "10px",
+  },
+  botonSecundario: {
+    padding: "6px 12px",
+    backgroundColor: "transparent",
+    color: "#f87171",
+    border: "1px solid #f87171",
+    borderRadius: "6px",
+  },
+};
 
 function PanelBarbero() {
   const [usuario, setUsuario] = useState(null);
@@ -39,7 +90,7 @@ function PanelBarbero() {
     cargarServicios();
     cargarHorarios();
     cargarFotos();
-}, [usuario]);
+  }, [usuario]);
 
   async function cargarCitas() {
     const snapshot = await getDocs(collection(db, "citas"));
@@ -59,9 +110,9 @@ function PanelBarbero() {
   async function cargarFotos() {
     const snapshot = await getDocs(collection(db, "fotos"));
     setFotos(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-}
+  }
 
-async function subirFoto(e) {
+  async function subirFoto(e) {
     const archivo = e.target.files[0];
     if (!archivo) return;
 
@@ -88,7 +139,7 @@ async function subirFoto(e) {
     }
 
     setSubiendoFoto(false);
-}
+  }
 
   async function agregarServicio(e) {
     e.preventDefault();
@@ -137,7 +188,7 @@ async function subirFoto(e) {
   }
 
   if (cargandoAuth) {
-    return <p style={{ padding: "20px" }}>Cargando...</p>;
+    return <p style={{ padding: "20px", color: "#f2f2f2" }}>Cargando...</p>;
   }
 
   if (!usuario) {
@@ -145,129 +196,96 @@ async function subirFoto(e) {
   }
 
   return (
-    <div style={{ fontFamily: "Arial", padding: "20px", maxWidth: "500px" }}>
-      <h1>Panel del Barbero</h1>
-      <button onClick={() => signOut(auth)} style={{ marginBottom: "20px" }}>
+    <div style={estilos.pagina}>
+      <h1 style={estilos.h1}>Panel del Barbero</h1>
+      <button onClick={() => signOut(auth)} style={estilos.botonSecundario}>
         Cerrar sesión
       </button>
 
-      <h2>Citas reservadas</h2>
+      <h2 style={estilos.h2}>Citas reservadas</h2>
       {citas.length === 0 && <p>Todavía no hay citas reservadas.</p>}
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {citas.map((cita) => (
-          <li
-            key={cita.id}
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              padding: "10px",
-              marginBottom: "10px",
-            }}
+      {citas.map((cita) => (
+        <div key={cita.id} style={estilos.card}>
+          <strong>{cita.nombreCliente}</strong>
+          <br />
+          Servicio: {cita.servicio}
+          <br />
+          Día: {cita.dia} — Hora: {cita.hora}
+          <br />
+          Estado: {cita.estado}
+        </div>
+      ))}
+
+      <hr style={{ margin: "30px 0", borderColor: "#22c55e" }} />
+
+      <h2 style={estilos.h2}>Servicios y precios</h2>
+      {servicios.map((servicio) => (
+        <div key={servicio.id} style={estilos.cardFila}>
+          <span>
+            {servicio.nombre} — S/ {servicio.precio}
+          </span>
+          <button
+            onClick={() => eliminarServicio(servicio.id)}
+            style={estilos.botonSecundario}
           >
-            <strong>{cita.nombreCliente}</strong>
-            <br />
-            Servicio: {cita.servicio}
-            <br />
-            Día: {cita.dia} — Hora: {cita.hora}
-            <br />
-            Estado: {cita.estado}
-          </li>
-        ))}
-      </ul>
+            Eliminar
+          </button>
+        </div>
+      ))}
 
-      <hr style={{ margin: "30px 0" }} />
-
-      <h2>Servicios y precios</h2>
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {servicios.map((servicio) => (
-          <li
-            key={servicio.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              padding: "8px 10px",
-              marginBottom: "8px",
-            }}
-          >
-            <span>
-              {servicio.nombre} — S/ {servicio.precio}
-            </span>
-            <button onClick={() => eliminarServicio(servicio.id)}>
-              Eliminar
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      <h3>Agregar nuevo servicio</h3>
+      <h3 style={estilos.h3}>Agregar nuevo servicio</h3>
       <form onSubmit={agregarServicio}>
         <div style={{ marginBottom: "10px" }}>
           <label>Nombre del corte:</label>
-          <br />
           <input
             type="text"
             value={nombreServicio}
             onChange={(e) => setNombreServicio(e.target.value)}
-            style={{ width: "100%", padding: "6px" }}
+            style={estilos.input}
           />
         </div>
         <div style={{ marginBottom: "10px" }}>
           <label>Precio (S/):</label>
-          <br />
           <input
             type="number"
             value={precioServicio}
             onChange={(e) => setPrecioServicio(e.target.value)}
-            style={{ width: "100%", padding: "6px" }}
+            style={estilos.input}
           />
         </div>
-        <button type="submit" style={{ padding: "8px 16px" }}>
+        <button type="submit" style={estilos.boton}>
           Agregar servicio
         </button>
       </form>
 
-      <hr style={{ margin: "30px 0" }} />
+      <hr style={{ margin: "30px 0", borderColor: "#22c55e" }} />
 
-      <h2>Horarios de atención</h2>
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {horarios.map((horario) => (
-          <li
-            key={horario.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              padding: "8px 10px",
-              marginBottom: "8px",
-            }}
+      <h2 style={estilos.h2}>Horarios de atención</h2>
+      {horarios.map((horario) => (
+        <div key={horario.id} style={estilos.cardFila}>
+          <span>
+            {horario.dia}:{" "}
+            {horario.activo
+              ? `${horario.horaInicio} a ${horario.horaFin}`
+              : "Cerrado"}
+          </span>
+          <button
+            onClick={() => eliminarHorario(horario.id)}
+            style={estilos.botonSecundario}
           >
-            <span>
-              {horario.dia}:{" "}
-              {horario.activo
-                ? `${horario.horaInicio} a ${horario.horaFin}`
-                : "Cerrado"}
-            </span>
-            <button onClick={() => eliminarHorario(horario.id)}>
-              Eliminar
-            </button>
-          </li>
-        ))}
-      </ul>
+            Eliminar
+          </button>
+        </div>
+      ))}
 
-      <h3>Agregar / editar horario</h3>
+      <h3 style={estilos.h3}>Agregar / editar horario</h3>
       <form onSubmit={agregarHorario}>
         <div style={{ marginBottom: "10px" }}>
           <label>Día:</label>
-          <br />
           <select
             value={diaHorario}
             onChange={(e) => setDiaHorario(e.target.value)}
-            style={{ width: "100%", padding: "6px" }}
+            style={estilos.input}
           >
             <option value="">-- Selecciona --</option>
             <option value="Lunes">Lunes</option>
@@ -282,23 +300,21 @@ async function subirFoto(e) {
 
         <div style={{ marginBottom: "10px" }}>
           <label>Hora inicio:</label>
-          <br />
           <input
             type="time"
             value={horaInicioHorario}
             onChange={(e) => setHoraInicioHorario(e.target.value)}
-            style={{ width: "100%", padding: "6px" }}
+            style={estilos.input}
           />
         </div>
 
         <div style={{ marginBottom: "10px" }}>
           <label>Hora fin:</label>
-          <br />
           <input
             type="time"
             value={horaFinHorario}
             onChange={(e) => setHoraFinHorario(e.target.value)}
-            style={{ width: "100%", padding: "6px" }}
+            style={estilos.input}
           />
         </div>
 
@@ -308,19 +324,20 @@ async function subirFoto(e) {
               type="checkbox"
               checked={activoHorario}
               onChange={(e) => setActivoHorario(e.target.checked)}
+              style={{ width: "auto" }}
             />{" "}
             Día activo (atiende ese día)
           </label>
         </div>
 
-        <button type="submit" style={{ padding: "8px 16px" }}>
+        <button type="submit" style={estilos.boton}>
           Agregar horario
         </button>
       </form>
 
-           <hr style={{ margin: "30px 0" }} />
+      <hr style={{ margin: "30px 0", borderColor: "#22c55e" }} />
 
-      <h2>Galería de fotos / herramientas</h2>
+      <h2 style={estilos.h2}>Galería de fotos / herramientas</h2>
 
       <div
         style={{
@@ -335,7 +352,13 @@ async function subirFoto(e) {
             key={foto.id}
             src={foto.url}
             alt="Foto de la barbería"
-            style={{ width: "100%", height: "90px", objectFit: "cover", borderRadius: "6px" }}
+            style={{
+              width: "100%",
+              height: "90px",
+              objectFit: "cover",
+              borderRadius: "6px",
+              border: "1px solid #22c55e",
+            }}
           />
         ))}
       </div>
@@ -343,11 +366,12 @@ async function subirFoto(e) {
       <label
         style={{
           display: "inline-block",
-          padding: "8px 16px",
-          background: "#333",
-          color: "white",
+          padding: "10px 18px",
+          background: "#22c55e",
+          color: "#0b0f0b",
           borderRadius: "6px",
           cursor: "pointer",
+          fontWeight: "bold",
         }}
       >
         {subiendoFoto ? "Subiendo..." : "Subir foto"}
@@ -360,7 +384,7 @@ async function subirFoto(e) {
         />
       </label>
 
-      {mensaje && <p style={{ color: "green" }}>{mensaje}</p>}
+      {mensaje && <p style={{ color: "#4ade80", marginTop: "15px" }}>{mensaje}</p>}
     </div>
   );
 }
