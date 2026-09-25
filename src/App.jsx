@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import PanelBarbero from "./PanelBarbero";
 import ConfirmarCita from "./ConfirmarCita.jsx";
@@ -41,6 +41,18 @@ function PaginaCliente() {
 
     if (!nombreCliente || !servicioElegido || !diaElegido || !horaElegida) {
       setMensaje("Por favor completa todos los campos.");
+      return;
+    }
+
+    const q = query(
+      collection(db, "citas"),
+      where("dia", "==", diaElegido),
+      where("hora", "==", horaElegida)
+    );
+    const citasExistentes = await getDocs(q);
+
+    if (!citasExistentes.empty) {
+      setMensaje("Ese horario ya está reservado. Por favor elige otra hora.");
       return;
     }
 
