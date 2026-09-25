@@ -73,7 +73,12 @@ function PaginaCliente() {
 
   return (
     <div style={{ fontFamily: "Arial", padding: "20px", maxWidth: "400px" }}>
-      <h1>Santos Faded</h1>
+            <img
+        src="/logo.png"
+        alt="Santos Faded Barbería"
+        style={{ width: "120px", height: "120px", borderRadius: "50%", marginBottom: "10px" }}
+      />
+      <h1>Santos Faded </h1>
       <h2>Nuestros servicios</h2>
       <ul>
         {servicios.map((servicio) => (
